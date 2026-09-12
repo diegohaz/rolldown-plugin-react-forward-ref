@@ -1,4 +1,5 @@
 import MagicString from "magic-string";
+import { extractAssignedNames } from "@rollup/pluginutils";
 import { parseSync, visitorKeys } from "oxc-parser";
 import type {
   Expression,
@@ -7,6 +8,7 @@ import type {
   Node,
   Program,
 } from "oxc-parser";
+import type { Options } from "./index.js";
 
 type Component = FunctionNode | ArrowFunctionExpression;
 const marker = "@react-forward-ref transformed";
@@ -177,7 +179,87 @@ function reactCalls(program: Program) {
   return matches;
 }
 
-export function transform(code: string, id: string) {
+function elementFactoryCalls(
+  program: Program,
+  factories: NonNullable<Options["elementFactories"]>,
+) {
+  const localNames = new Map<string, Set<number>>();
+  function add(name: string, index: number) {
+    const indices = localNames.get(name) ?? new Set<number>();
+    indices.add(index);
+    localNames.set(name, indices);
+  }
+  // Match imports conservatively: a same-named binding in any nested scope
+  // disables import-based trust for that name throughout the module.
+  const shadowed = new Set<string>();
+  function bind(pattern: Node) {
+    if (pattern.type === "TSParameterProperty") {
+      bind(pattern.parameter);
+      return;
+    }
+    for (const name of extractAssignedNames(pattern)) shadowed.add(name);
+  }
+  walk(program, (node) => {
+    if (isFunction(node)) {
+      if (node.type !== "ArrowFunctionExpression" && node.id) bind(node.id);
+      for (const parameter of node.params) bind(parameter);
+    } else if (node.type === "VariableDeclarator") {
+      bind(node.id);
+    } else if (node.type === "CatchClause" && node.param) {
+      bind(node.param);
+    } else if (
+      (node.type === "ClassDeclaration" ||
+        node.type === "ClassExpression" ||
+        node.type === "TSEnumDeclaration" ||
+        node.type === "TSModuleDeclaration" ||
+        node.type === "TSImportEqualsDeclaration") &&
+      node.id?.type === "Identifier"
+    ) {
+      bind(node.id);
+    }
+  });
+  for (const factory of factories) {
+    if (typeof factory === "string") {
+      add(factory, 0);
+      continue;
+    }
+    for (const statement of program.body) {
+      if (
+        statement.type !== "ImportDeclaration" ||
+        statement.importKind === "type" ||
+        statement.source.value !== factory.source
+      )
+        continue;
+      for (const specifier of statement.specifiers) {
+        if (shadowed.has(specifier.local.name)) continue;
+        let imported: string;
+        if (specifier.type === "ImportDefaultSpecifier") {
+          imported = "default";
+        } else if (
+          specifier.type === "ImportSpecifier" &&
+          specifier.importKind !== "type"
+        ) {
+          imported =
+            specifier.imported.type === "Identifier"
+              ? specifier.imported.name
+              : specifier.imported.value;
+        } else {
+          continue;
+        }
+        if (imported === factory.imported)
+          add(specifier.local.name, factory.argumentIndex ?? 0);
+      }
+    }
+  }
+  return (callee: Expression, index: number) =>
+    callee.type === "Identifier" && localNames.get(callee.name)?.has(index);
+}
+
+export function transform(
+  code: string,
+  id: string,
+  elementFactories: NonNullable<Options["elementFactories"]> = [],
+) {
   const typescript = /\.[cm]?tsx?$/.test(id);
   const parsed = parseSync(id, code, {
     sourceType: "module",
@@ -192,6 +274,9 @@ export function transform(code: string, id: string) {
     return null;
   const { program } = parsed;
   const isReactCall = reactCalls(program);
+  const isElementFactory = elementFactories.length
+    ? elementFactoryCalls(program, elementFactories)
+    : () => false;
   const names = new Set<string>();
   const renderFunctions = new Set<string>();
   const aliases = new Map<string, Set<string>>();
@@ -221,12 +306,22 @@ export function transform(code: string, id: string) {
       ["call", "apply", "bind"].includes(callee.property.name)
     )
       renderFunctions.add(callee.object.name);
-    if (isReactCall(callee, "memo") || isReactCall(callee, "createElement"))
-      return;
+    const isElementCall =
+      isReactCall(callee, "memo") || isReactCall(callee, "createElement");
     // Opaque HOCs may call forwardRef themselves. Leave their render inputs
     // alone instead of ever handing them an already wrapped object.
-    for (const argument of node.arguments) {
-      if (argument.type === "SpreadElement") continue;
+    let spread = false;
+    for (const [index, argument] of node.arguments.entries()) {
+      if (argument.type === "SpreadElement") {
+        spread = true;
+        continue;
+      }
+      if (
+        node.type === "CallExpression" &&
+        !spread &&
+        ((isElementCall && index === 0) || isElementFactory(callee, index))
+      )
+        continue;
       const render = unwrap(argument);
       if (render.type === "Identifier") renderFunctions.add(render.name);
     }

@@ -3,6 +3,7 @@ import { originalPositionFor, TraceMap } from "@jridgewell/trace-mapping";
 import { parseSync } from "oxc-parser";
 import { describe, expect, test } from "vitest";
 import reactForwardRef from "../src/index.js";
+import type { Options } from "../src/index.js";
 
 const id = resolve("tests/fixtures/component.tsx");
 const plugin = reactForwardRef({
@@ -192,4 +193,155 @@ test("allows React.createElement references and memo aliases", () => {
   const source =
     'import { createElement, memo } from "react"; function Button(props) { return <input {...props} />; } export const element = createElement(Button); export const Memo = memo(Button);';
   expect(transform(source)).not.toBeNull();
+});
+
+test.each([
+  "memo(Other, Button)",
+  "createElement(Other, Button)",
+  "new memo(Button)",
+  "new createElement(Button)",
+])("limits built-in trust to the first argument of calls: %s", (call) => {
+  expect(
+    transform(`import { memo, createElement } from "react";
+function Button(props) { return <input {...props} />; }
+${call};`),
+  ).toBeNull();
+});
+
+describe("trusted element factories", () => {
+  const component =
+    "export function TableCell(props) { return <td {...props} />; }";
+  const imported = {
+    source: "./render",
+    imported: "createRender",
+  };
+  function adapt(
+    source: string,
+    elementFactories: Options["elementFactories"] = [imported],
+  ) {
+    return reactForwardRef({ include: id, elementFactories }).transform.handler(
+      source,
+      id,
+    );
+  }
+
+  test("opts the issue reproduction in with the pnpm patch's local-name API", () => {
+    const source = `import * as React from "react";
+function createRender(Component, props) { return React.createElement(Component, props); }
+${component}
+export const cell = createRender(TableCell, {});`;
+    expect(transform(source)).toBeNull();
+    const result = adapt(source, ["createRender"])!;
+    expect(result.code).toContain('__reactForwardRef(TableCell, "TableCell")');
+    expect(parseSync(id, result.code).errors).toEqual([]);
+    expect(adapt(result.code, ["createRender"])).toBeNull();
+  });
+
+  test.each([
+    'import { createRender } from "./render"; createRender(TableCell, {});',
+    'import { createRender as render } from "./render"; function useCell() { return render(TableCell, {}); }',
+    'import { createRender } from "./render"; createRender?.((TableCell as Component), {});',
+    'import { createRender } from "./render"; (createRender!)(TableCell, ...props);',
+    'import { createRender } from "./render"; const Alias = TableCell; createRender(Alias, {});',
+  ])("resolves trusted named imports: %s", (source) => {
+    expect(adapt(`${component} ${source}`)).not.toBeNull();
+  });
+
+  test("supports default imports and configurable component positions", () => {
+    const source = `${component} import render from "./render"; render({}, TableCell);`;
+    expect(adapt(source, [{ ...imported, imported: "default" }])).toBeNull();
+    expect(
+      adapt(source, [{ ...imported, imported: "default", argumentIndex: 1 }]),
+    ).not.toBeNull();
+    expect(
+      adapt(source.replace("render({},", "render(...props,"), [
+        { ...imported, imported: "default", argumentIndex: 1 },
+      ]),
+    ).toBeNull();
+  });
+
+  test("keeps the configured argument independent of unsafe arguments", () => {
+    const source = `import { createRender } from "./render";
+${component}
+export function Render(props) { return <span {...props} />; }
+createRender(TableCell, Render);`;
+    const result = adapt(source)!;
+    expect(result.code).toContain('__reactForwardRef(TableCell, "TableCell")');
+    expect(result.code).not.toContain('__reactForwardRef(Render, "Render")');
+  });
+
+  test("does not turn a trusted factory into a component selector", () => {
+    const source = `import { createRender } from "./render";
+function TableCell(props) { return createElement("td", props); }
+createRender(TableCell);`;
+    expect(adapt(source)).toBeNull();
+  });
+
+  test.each([
+    'import { createRender } from "./other"; createRender(TableCell);',
+    'import { other as createRender } from "./render"; createRender(TableCell);',
+    'import type { createRender } from "./render"; createRender(TableCell);',
+    'import { type createRender } from "./render"; createRender(TableCell);',
+    "function createRender(c) { return c({}); } createRender(TableCell);",
+    'import * as render from "./render"; render.createRender(TableCell);',
+    'import { createRender } from "./render"; const render = createRender; render(TableCell);',
+  ])(
+    "does not infer trust from unrelated or unsupported bindings: %s",
+    (source) => {
+      expect(adapt(`${component} ${source}`)).toBeNull();
+    },
+  );
+
+  test.each([
+    "function run(createRender) { createRender(TableCell); }",
+    "function run({ createRender }) { createRender(TableCell); }",
+    "function run(...createRender) { createRender(TableCell); }",
+    "{ createRender(TableCell); const createRender = hoc; }",
+    "function run() { createRender(TableCell); if (flag) { var createRender = hoc; } }",
+    "try {} catch (createRender) { createRender(TableCell); }",
+    "const run = function createRender() { createRender(TableCell); };",
+    "const run = class createRender { method() { createRender(TableCell); } };",
+    "for (const createRender of factories) createRender(TableCell);",
+    "function run() { enum createRender {} createRender(TableCell); }",
+    "function run() { function createRender(c) { return c({}); } createRender(TableCell); }",
+  ])("keeps shadowed import calls opaque: %s", (source) => {
+    expect(
+      adapt(`import { createRender } from "./render"; ${component} ${source}`),
+    ).toBeNull();
+  });
+
+  test.each([
+    "new createRender(TableCell);",
+    "createRender({}, TableCell);",
+    "createRender(TableCell, TableCell);",
+    "createRender.call(null, TableCell);",
+    "createRender.apply(null, TableCell);",
+    "createRender.bind(null, TableCell);",
+    "createRender(...props, TableCell);",
+    "createRender(TableCell); TableCell({});",
+    "createRender(TableCell); new TableCell();",
+    "createRender(TableCell); TableCell.call(null, {});",
+    "createRender(TableCell); TableCell.apply(null, []);",
+    "createRender(TableCell); TableCell.bind(null);",
+    "createRender(TableCell); hoc(TableCell);",
+    "createRender(TableCell); const Alias = TableCell; hoc(Alias);",
+  ])("retains unsafe-use protection: %s", (source) => {
+    for (const factories of [[imported], ["createRender"]]) {
+      expect(
+        adapt(
+          `import { createRender } from "./render"; ${component} ${source}`,
+          factories,
+        ),
+      ).toBeNull();
+    }
+  });
+
+  test.each([-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
+    "rejects invalid argument positions: %s",
+    (argumentIndex) => {
+      expect(() => adapt(component, [{ ...imported, argumentIndex }])).toThrow(
+        "argumentIndex must be a non-negative safe integer",
+      );
+    },
+  );
 });

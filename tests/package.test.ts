@@ -68,10 +68,11 @@ test("installs the packed package and checks its API from a separate consumer", 
     await writeFile(
       join(directory, "consumer.ts"),
       `import plugin from "rolldown-plugin-react-forward-ref";
-import type { Options, ReactForwardRefPlugin } from "rolldown-plugin-react-forward-ref";
+import type { Options, ImportedElementFactory, ReactForwardRefPlugin } from "rolldown-plugin-react-forward-ref";
 import type { Plugin as RolldownPlugin } from "rolldown";
 import type { Plugin as VitePlugin } from "vite";
-const options: Options = { include: ["src/**/*.tsx", /components/], exclude: "**/*.test.tsx" };
+const factory: ImportedElementFactory = { source: "./render", imported: "render", argumentIndex: 1 };
+const options: Options = { include: ["src/**/*.tsx", /components/], exclude: "**/*.test.tsx", elementFactories: ["createRender", factory] };
 const own: ReactForwardRefPlugin = plugin(options);
 const rolldown: RolldownPlugin = own;
 const vite: VitePlugin = own;
@@ -97,6 +98,8 @@ const transform = plugin({ include: "**/*.tsx" }).transform.handler;
 const output = transform("export const Input = props => <input {...props} />", "/src/input.tsx");
 assert.match(output.code, /forwardRef/);
 assert.equal(transform(output.code, "/src/input.tsx"), null);
+const factoryTransform = plugin({ include: "**/*.tsx", elementFactories: [{ source: "./render", imported: "render", argumentIndex: 1 }] }).transform.handler;
+assert.match(factoryTransform('import { render as factory } from "./render"; export function Input(props) { return <input {...props} />; } factory({}, Input);', "/src/input.tsx").code, /forwardRef/);
 `,
     );
     run(process.execPath, ["consumer.mjs"]);
