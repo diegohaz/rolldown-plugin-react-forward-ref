@@ -16,8 +16,7 @@ React element around the original function, and wrappers keep their identity
 across renders. This package adapts **ref transport only**. It does not polyfill
 other React 19 features.
 
-The first release is in development. The package is not published yet. After
-publication, install it as a development dependency:
+Install it as a development dependency:
 
 ```sh
 pnpm add -D rolldown-plugin-react-forward-ref
@@ -229,11 +228,6 @@ The checks include syntax fixtures, separate React runtime graphs, real Rolldown
 and Vite transforms, source maps, TypeScript output, and a tarball installed in a
 separate consumer. See [Contributing.md](./Contributing.md).
 
-## Release status and license
-
-The repository remains private. Keep `RELEASE_ENABLED=false` and
-`NPM_PUBLISH_ENABLED=false` until publication timing, package contents, the MIT
-license, and npm trusted publishing are confirmed. The npm name is not reserved
-by this implementation.
+## License
 
 [MIT](./LICENSE).

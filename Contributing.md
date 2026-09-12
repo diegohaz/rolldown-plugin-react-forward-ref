@@ -43,9 +43,36 @@ integration. Verify the packed package and its declarations from a consumer
 project. Keep source fixtures in `tests/fixtures`; this directory is excluded
 from formatting, lint, and TypeScript project checks.
 
-Changesets uses its built-in changelog generator. Add a changeset for the first
-working release. Release workflows are disabled through repository variables
-until the package is ready and npm publishing has been configured.
+Changesets uses its built-in changelog generator. Add a changeset for each
+user-facing change. The root package is explicitly listed in
+`pnpm-workspace.yaml` so Changesets can version and publish it. The React fixture
+workspaces are private and are not published.
+
+## Releases
+
+Version `0.1.0` is prepared for the first npm publication. Before publishing,
+merge the production dependency ranges and release preparation changes, then
+run the checks and inspect the publish plan:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm run check
+pnpm exec changeset publish-plan
+```
+
+The plan must contain only `rolldown-plugin-react-forward-ref` at the intended
+version. Authenticate to npm and run `pnpm run release` from the merged `main`
+branch to publish the first version locally. Push the release tag after a
+successful publication. After the
+package exists, configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+with GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and
+workflow filename `release.yml`. Permit direct `npm publish` for this workflow.
+The repository is private, so `publishConfig.provenance` is `false`.
+
+`RELEASE_ENABLED` enables the Changesets workflow. `NPM_PUBLISH_ENABLED` also
+enables its publish step. Keep both variables `false` until the first publication
+and trusted publisher setup are complete. Later releases use version PRs created
+by the workflow.
 
 ## Commit checks
 
