@@ -50,24 +50,15 @@ workspaces are private and are not published.
 
 ## Releases
 
-The `Release` workflow in `.github/workflows/release.yml` uses `changesets/action`
-to create version PRs and publish packages. Commit release notes in `.changeset`;
-the action runs `pnpm run version` to update the version and changelog in a
-separate `Publish` PR. The first minor changeset will produce `0.1.0`.
+The `Release` workflow in `.github/workflows/release.yml` uses `changesets/action` to create version PRs and publish packages on pushes to `main`. You can also dispatch it manually on `main`.
 
-After the release setup is merged into `main`, set `RELEASE_ENABLED=true` and
-dispatch the `Release` workflow to create the version PR. Later pushes to `main`
-also run it. The workflow dispatches `Main` checks for its generated PR.
+1. Run `pnpm run changeset` for a user-facing change and commit the generated release note with the change.
+2. Merge the change into `main`. The action runs `pnpm run version` to update the version and changelog in a separate `Publish` PR. It also dispatches `Main` checks for that PR.
+3. Review the version and changelog, wait for the checks to pass, then merge the `Publish` PR. The action runs `pnpm run release` to publish to npm and creates the release tag and GitHub release.
 
-Keep `NPM_PUBLISH_ENABLED=false` while reviewing the version PR and configuring
-npm authentication. When publication is ready, enable it and merge the version
-PR. The action then runs `pnpm run release` and creates the release tags and
-GitHub release. Enabling version PRs alone does not enable npm publication.
+Both repository variables, `RELEASE_ENABLED` and `NPM_PUBLISH_ENABLED`, are set to `true`. Set `RELEASE_ENABLED=false` to pause the entire release job. Set `NPM_PUBLISH_ENABLED=false` to pause npm publication while keeping version PRs enabled.
 
-For [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/), use
-GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and
-workflow filename `release.yml`. Permit direct `npm publish` for this workflow.
-The repository is private, so `publishConfig.provenance` is `false`.
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) is configured for GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and workflow filename `release.yml`, with direct publication permitted. The workflow uses GitHub Actions OIDC authentication; no npm access token is required. The repository is private, so `publishConfig.provenance` is `false`.
 
 ## Commit checks
 
