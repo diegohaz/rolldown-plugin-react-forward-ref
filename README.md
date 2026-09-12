@@ -152,6 +152,66 @@ from other modules, and component registries are not resolved. Imported
 components must be adapted in their own source module. `React.createElement`
 references to a selected local component are supported.
 
+### Trusted element factories
+
+Use `elementFactories` when a helper creates, clones, returns, or omits React
+elements without calling the supplied component directly. The option permits
+ref adaptation for that helper's component argument. It does not select files
+or components that would otherwise be ineligible.
+
+```ts
+reactForwardRef({
+  include: "packages/ariakit-ui/src/components/**/*.react.tsx",
+  elementFactories: [
+    {
+      source: "../react-utils/create-render.react.ts",
+      imported: "createRender",
+    },
+    {
+      source: "../react-utils/create-render.react.ts",
+      imported: "createOptionalRender",
+    },
+  ],
+});
+```
+
+Each import descriptor has these fields:
+
+| Field           | Meaning                                                                                       |
+| --------------- | --------------------------------------------------------------------------------------------- |
+| `source`        | Exact import source string in the selected file. No path or package resolution is performed.  |
+| `imported`      | Named export, or `"default"` for a default import. Local import renames are supported.        |
+| `argumentIndex` | Zero-based component argument position. Defaults to `0`; must be a non-negative safe integer. |
+
+For example, `{ source: "./render", imported: "render", argumentIndex: 1 }`
+matches `import { render as make } from "./render"; make(props, Button)`.
+Type-only imports, namespace members, and further local aliases are not matched.
+If another declaration or parameter uses the import's local name anywhere in
+the file, import-based trust for that name is disabled throughout the file.
+This conservative rule prevents a shadowed helper from receiving a wrapper.
+
+For a helper defined in the same file, or an intentional match by local name,
+use a string:
+
+```ts
+reactForwardRef({
+  include: "src/**/*.tsx",
+  elementFactories: ["createRender", "createOptionalRender"],
+});
+```
+
+Strings trust argument `0` of every identifier call with that name in selected
+files, including imports from other sources and shadowed bindings. Use import
+descriptors when these names can refer to unrelated helpers. This string form
+is compatible with the temporary pnpm patch in Ariakit PR #7498.
+
+Only the configured argument of an ordinary or optional call is trusted.
+Constructors, `.call`/`.apply`/`.bind`, other arguments, and arguments after a
+spread remain subject to the opaque-call check. A direct call or an unknown
+helper elsewhere still prevents wrapping the component. The plugin does not
+inspect a configured helper's implementation; only opt in helpers that accept
+a React component type without calling it as a function.
+
 ## Runtime, types, and source preservation
 
 The implementation uses Oxc's TypeScript/JSX AST and MagicString source edits.

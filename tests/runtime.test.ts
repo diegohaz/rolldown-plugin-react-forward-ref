@@ -40,6 +40,7 @@ import NamedDefault, {
 import AnonymousDefault from "./fixtures/anonymous-default.js";
 import ArrowDefault from "./fixtures/arrow-default.js";
 import { Excluded } from "./fixtures/excluded.js";
+import { FactoryTable } from "./fixtures/factory-components.js";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -138,6 +139,42 @@ test("keeps export aliases, early references, and assigned static properties", (
   expect(NamedEarlyAlias).toBe(NamedDefault);
   expect(Input.displayName).toBe("CustomInput");
   expect(Input.description).toBe("static property");
+});
+
+test("transports refs through trusted element factories and optional captions", async () => {
+  const error = vi.spyOn(console, "error");
+  const ref = createRef<HTMLTableCellElement>();
+  const captionRef = vi.fn();
+  await act(() =>
+    root.render(
+      createElement(FactoryTable, {
+        cell: { ref, children: "Cell" },
+        caption: { ref: captionRef, children: "Caption" },
+      }),
+    ),
+  );
+  const cell = container.querySelector("td");
+  expect(cell).not.toBeNull();
+  expect(ref.current).toBe(cell);
+  expect(captionRef).toHaveBeenLastCalledWith(
+    container.querySelector("caption"),
+  );
+  expect(container.querySelector("caption")).not.toBeNull();
+  await act(() =>
+    root.render(
+      createElement(FactoryTable, {
+        cell: { ref, children: "Updated" },
+        caption: null,
+      }),
+    ),
+  );
+  expect(ref.current).toBe(cell);
+  expect(cell?.textContent).toBe("Updated");
+  expect(container.querySelector("caption")).toBeNull();
+  expect(captionRef.mock.calls.at(-1)?.[0]).toBeNull();
+  await act(() => root.render(null));
+  expect(ref.current).toBeNull();
+  expect(error).not.toHaveBeenCalled();
 });
 
 test("defines no-ref semantics for absent, undefined, and null values", async () => {

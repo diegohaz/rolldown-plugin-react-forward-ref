@@ -43,6 +43,16 @@ export default defineConfig({
               reactForwardRef({
                 include: "**/fixtures/*.tsx",
                 exclude: "**/excluded.tsx",
+                elementFactories: [
+                  {
+                    source: "./element-factories.js",
+                    imported: "createRender",
+                  },
+                  {
+                    source: "./element-factories.js",
+                    imported: "createOptionalRender",
+                  },
+                ],
               }),
             react(),
           ],
