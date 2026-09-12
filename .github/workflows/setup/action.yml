@@ -1,0 +1,11 @@
+name: Setup
+description: Install the pinned Node and pnpm tools and package dependencies.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+      with:
+        require-lockfile: true
+      env:
+        LEFTHOOK: "0"

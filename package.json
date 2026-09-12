@@ -1,0 +1,80 @@
+{
+  "name": "rolldown-plugin-react-forward-ref",
+  "version": "0.0.0",
+  "description": "Transform React ref props into forwardRef components for React 18 with Rolldown and Vite.",
+  "keywords": [
+    "forwardref",
+    "react",
+    "react18",
+    "rolldown",
+    "rolldown-plugin",
+    "vite",
+    "vite-plugin"
+  ],
+  "homepage": "https://github.com/diegohaz/rolldown-plugin-react-forward-ref#readme",
+  "bugs": {
+    "url": "https://github.com/diegohaz/rolldown-plugin-react-forward-ref/issues"
+  },
+  "license": "MIT",
+  "author": "Diego Haz",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diegohaz/rolldown-plugin-react-forward-ref.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": false
+  },
+  "scripts": {
+    "build": "rolldown -c",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "fix": "pnpm run lint:fix && pnpm run format",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run build && vitest run",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm test",
+    "changeset": "changeset",
+    "version": "changeset version && pnpm install --lockfile-only && oxfmt CHANGELOG.md package.json pnpm-lock.yaml",
+    "release": "changeset publish",
+    "prepack": "pnpm run build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "3.0.2",
+    "@types/node": "24.13.3",
+    "lefthook": "2.1.12",
+    "oxfmt": "0.66.0",
+    "oxlint": "1.81.0",
+    "rolldown": "1.2.7",
+    "rolldown-plugin-dts": "0.28.5",
+    "typescript": "7.0.2",
+    "vitest": "5.0.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.20.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": "^24.18.0 || >=26.0.0"
+  },
+  "packageManager": "pnpm@12.3.4"
+}

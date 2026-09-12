@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "minimumReleaseAge": "3 days",
+  "semanticCommits": "disabled",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "packageRules": [
+    {
+      "groupName": "changesets",
+      "matchPackageNames": ["/^@changesets\\//"]
+    },
+    {
+      "groupName": "oxc",
+      "matchPackageNames": [
+        "/^oxlint/",
+        "/^oxfmt/",
+        "/^@oxlint\\//",
+        "/^rolldown/"
+      ]
+    },
+    {
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "/^24\\./"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["actions/**"],
+      "pinDigests": false
+    },
+    {
+      "description": "Automerge stable development dependency patch and minor updates after required checks pass.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": "!/^0/",
+      "matchPackageNames": [
+        "!/^@changesets\\//",
+        "!/^oxlint/",
+        "!/^oxfmt/",
+        "!/^@oxlint\\//",
+        "!/^rolldown/"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Automerge pinned GitHub Action digest updates after required checks pass.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "pinDigest"],
+      "automerge": true
+    }
+  ],
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
+  "prCreation": "not-pending"
+}

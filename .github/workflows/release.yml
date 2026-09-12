@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main' && vars.RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      id-token: write
+    env:
+      LEFTHOOK: "0"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/workflows/setup
+      - name: Create version PR or publish
+        id: changesets
+        uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
+        with:
+          pr-title: Publish
+          commit-message: Publish
+          version-script: pnpm run version
+          publish-script: ${{ vars.NPM_PUBLISH_ENABLED == 'true' && 'pnpm run release' || '' }}
+      - name: Check the release PR
+        if: steps.changesets.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        run: |
+          release_branch=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
+          gh workflow run main.yml --ref "$release_branch"
