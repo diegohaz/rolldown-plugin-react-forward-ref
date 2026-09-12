@@ -47,6 +47,16 @@ export default function reactForwardRef(
   const filter = createFilter(options.include, options.exclude);
   for (const factory of options.elementFactories ?? []) {
     if (typeof factory === "string") continue;
+    if (
+      factory === null ||
+      typeof factory !== "object" ||
+      typeof factory.source !== "string" ||
+      typeof factory.imported !== "string"
+    ) {
+      throw new Error(
+        "react-forward-ref: element factory must be a string or an object with string source and imported fields",
+      );
+    }
     const index = factory.argumentIndex ?? 0;
     if (!Number.isSafeInteger(index) || index < 0) {
       throw new Error(

@@ -336,6 +336,28 @@ createRender(TableCell);`;
     }
   });
 
+  test.each(
+    [
+      null,
+      undefined,
+      false,
+      1,
+      [],
+      {},
+      { source: "./render" },
+      { imported: "createRender" },
+      { source: 1, imported: "createRender" },
+      { source: "./render", imported: false },
+    ].map((factory) => ({ factory })),
+  )("rejects invalid import descriptors: $factory", ({ factory }) => {
+    expect(() =>
+      // @ts-expect-error JavaScript callers can supply invalid descriptors.
+      adapt(component, [factory]),
+    ).toThrow(
+      "react-forward-ref: element factory must be a string or an object with string source and imported fields",
+    );
+  });
+
   test.each([-1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
     "rejects invalid argument positions: %s",
     (argumentIndex) => {
