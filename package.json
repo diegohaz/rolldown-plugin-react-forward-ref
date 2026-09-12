@@ -53,8 +53,7 @@
     "changeset": "changeset",
     "version": "changeset version && pnpm install --lockfile-only && oxfmt CHANGELOG.md package.json pnpm-lock.yaml",
     "release": "changeset publish",
-    "prepack": "pnpm run build",
-    "test:ariakit": "node scripts/verify-ariakit.mjs"
+    "prepack": "pnpm run build"
   },
   "dependencies": {
     "@rollup/pluginutils": "5.4.0",

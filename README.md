@@ -210,8 +210,7 @@ are not polyfilled. Use callbacks that return nothing for React 18 compatibility
 - Node: `^24.18.0 || >=26.0.0`; development and CI use Node 24.20.0.
 - Rolldown: 1.2.7 or later 1.x.
 - Vite: 8.2.2 or later 8.x, including Vitest 5's transform pipeline.
-- React/React DOM: 18.3.1 for the compatibility target. Tests also cover 19.3.0
-  and the pinned Ariakit integration's React 19.2.8.
+- React/React DOM: 18.3.1 for the compatibility target. Tests also cover 19.3.0.
 
 The plugin's runtime dependencies are external: `oxc-parser`, `magic-string`, and
 `@rollup/pluginutils`. React is only a development dependency of this repository.
@@ -219,7 +218,7 @@ The published plugin neither installs nor bundles React. Generated code imports
 `react` from the consumer's dependency graph. Configure React as external when
 building a reusable component library.
 
-## Development and integration evidence
+## Development
 
 ```sh
 pnpm install --frozen-lockfile
@@ -229,11 +228,6 @@ pnpm run check
 The checks include syntax fixtures, separate React runtime graphs, real Rolldown
 and Vite transforms, source maps, TypeScript output, and a tarball installed in a
 separate consumer. See [Contributing.md](./Contributing.md).
-
-The pinned Ariakit gallery has a failing React 18 baseline and passes with only
-UI source files selected. React 19 coverage remains enabled. See the
-[reproduction and results](./docs/ariakit-integration.md). Changes to Ariakit are
-kept separate from this package.
 
 ## Release status and license
 
