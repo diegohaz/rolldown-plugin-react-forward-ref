@@ -2,3 +2,7 @@ saveExact: true
 
 allowBuilds:
   lefthook: true
+
+packages:
+  - tests/fixtures/react18
+  - tests/fixtures/react19

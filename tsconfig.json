@@ -6,7 +6,8 @@
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node"],
+    "jsx": "react-jsx"
   },
   "include": ["src", "tests/**/*.ts", ".changeset/**/*.ts", "*.config.ts"],
   "exclude": ["tests/fixtures"]
