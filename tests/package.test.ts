@@ -49,7 +49,7 @@ test("installs the packed package and checks its API from a separate consumer", 
         ),
       }),
     );
-    run("pnpm", ["install", "--offline", "--ignore-scripts"]);
+    run("pnpm", ["install", "--prefer-offline", "--ignore-scripts"]);
     const installed = JSON.parse(
       await readFile(
         join(directory, "node_modules", manifest.name, "package.json"),

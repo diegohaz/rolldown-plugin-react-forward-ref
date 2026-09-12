@@ -61,7 +61,8 @@ The `Main` workflow in `.github/workflows/main.yml` runs lint, formatting,
 typecheck, and build/tests as separate steps on the pinned Node version. A
 separate `Gate` job requires the checks to pass. The release workflow uses the
 same setup and dispatches `Main` for version PRs. Run `pnpm run check` before
-you submit a change. The package test packs the build and installs it offline
-into a temporary consumer. Run `pnpm run test:ariakit -- /path/to/ariakit` for the separate pinned
+you submit a change. The package test packs the build and installs it
+into a temporary consumer. It uses the pnpm cache and can fetch missing registry
+metadata. Run `pnpm run test:ariakit -- /path/to/ariakit` for the separate pinned
 Ariakit integration check. It writes a disposable checkout and logs under the
 system temporary directory; it does not change the supplied checkout.
