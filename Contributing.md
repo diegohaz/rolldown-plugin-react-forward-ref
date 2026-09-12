@@ -43,9 +43,31 @@ integration. Verify the packed package and its declarations from a consumer
 project. Keep source fixtures in `tests/fixtures`; this directory is excluded
 from formatting, lint, and TypeScript project checks.
 
-Changesets uses its built-in changelog generator. Add a changeset for the first
-working release. Release workflows are disabled through repository variables
-until the package is ready and npm publishing has been configured.
+Changesets uses its built-in changelog generator. Add a changeset for each
+user-facing change. The root package is explicitly listed in
+`pnpm-workspace.yaml` so Changesets can version and publish it. The React fixture
+workspaces are private and are not published.
+
+## Releases
+
+The `Release` workflow in `.github/workflows/release.yml` uses `changesets/action`
+to create version PRs and publish packages. Commit release notes in `.changeset`;
+the action runs `pnpm run version` to update the version and changelog in a
+separate `Publish` PR. The first minor changeset will produce `0.1.0`.
+
+After the release setup is merged into `main`, set `RELEASE_ENABLED=true` and
+dispatch the `Release` workflow to create the version PR. Later pushes to `main`
+also run it. The workflow dispatches `Main` checks for its generated PR.
+
+Keep `NPM_PUBLISH_ENABLED=false` while reviewing the version PR and configuring
+npm authentication. When publication is ready, enable it and merge the version
+PR. The action then runs `pnpm run release` and creates the release tags and
+GitHub release. Enabling version PRs alone does not enable npm publication.
+
+For [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/), use
+GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and
+workflow filename `release.yml`. Permit direct `npm publish` for this workflow.
+The repository is private, so `publishConfig.provenance` is `false`.
 
 ## Commit checks
 
