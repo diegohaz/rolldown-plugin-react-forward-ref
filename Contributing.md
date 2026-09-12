@@ -29,13 +29,14 @@ pnpm run check
 
 ## Source and tests
 
-`src/index.ts` is the package entry point. It is empty during project setup.
-Issue #1 defines the plugin scope and acceptance criteria.
+`src/index.ts` is the public plugin entry point. `src/transform.ts` selects
+components with Oxc and applies source edits with MagicString. Issue #1 defines
+the plugin scope and acceptance criteria.
 
 Rolldown builds the public entry point and TypeScript declarations. TypeScript
 checks source, tests, and tool configuration. Vitest is configured for
-`tests/**/*.test.ts`. The temporary `passWithNoTests` option lets the initial
-setup pass checks. Remove it when the implementation adds tests.
+`tests/*.test.ts`, with separate React 18 and React 19 projects. The private
+fixture workspaces install matching React and React DOM versions.
 
 Test ref behavior under React 18 and React 19, plus real Rolldown and Vite/Vitest
 integration. Verify the packed package and its declarations from a consumer
@@ -60,4 +61,6 @@ The `Main` workflow in `.github/workflows/main.yml` runs lint, formatting,
 typecheck, and build/tests as separate steps on the pinned Node version. A
 separate `Gate` job requires the checks to pass. The release workflow uses the
 same setup and dispatches `Main` for version PRs. Run `pnpm run check` before
-you submit a change. The initial setup has no plugin behavior tests.
+you submit a change. The package test packs the build and installs it
+into a temporary consumer. It uses the pnpm cache and can fetch missing registry
+metadata.
