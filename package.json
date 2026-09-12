@@ -1,6 +1,6 @@
 {
   "name": "rolldown-plugin-react-forward-ref",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Transform React ref props into forwardRef components for React 18 with Rolldown and Vite.",
   "keywords": [
     "forwardref",

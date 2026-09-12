@@ -50,29 +50,24 @@ workspaces are private and are not published.
 
 ## Releases
 
-Version `0.1.0` is prepared for the first npm publication. Before publishing,
-merge the production dependency ranges and release preparation changes, then
-run the checks and inspect the publish plan:
+The `Release` workflow in `.github/workflows/release.yml` uses `changesets/action`
+to create version PRs and publish packages. Commit release notes in `.changeset`;
+the action runs `pnpm run version` to update the version and changelog in a
+separate `Publish` PR. The first minor changeset will produce `0.1.0`.
 
-```sh
-pnpm install --frozen-lockfile
-pnpm run check
-pnpm exec changeset publish-plan
-```
+After the release setup is merged into `main`, set `RELEASE_ENABLED=true` and
+dispatch the `Release` workflow to create the version PR. Later pushes to `main`
+also run it. The workflow dispatches `Main` checks for its generated PR.
 
-The plan must contain only `rolldown-plugin-react-forward-ref` at the intended
-version. Authenticate to npm and run `pnpm run release` from the merged `main`
-branch to publish the first version locally. Push the release tag after a
-successful publication. After the
-package exists, configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
-with GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and
+Keep `NPM_PUBLISH_ENABLED=false` while reviewing the version PR and configuring
+npm authentication. When publication is ready, enable it and merge the version
+PR. The action then runs `pnpm run release` and creates the release tags and
+GitHub release. Enabling version PRs alone does not enable npm publication.
+
+For [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/), use
+GitHub owner `diegohaz`, repository `rolldown-plugin-react-forward-ref`, and
 workflow filename `release.yml`. Permit direct `npm publish` for this workflow.
 The repository is private, so `publishConfig.provenance` is `false`.
-
-`RELEASE_ENABLED` enables the Changesets workflow. `NPM_PUBLISH_ENABLED` also
-enables its publish step. Keep both variables `false` until the first publication
-and trusted publisher setup are complete. Later releases use version PRs created
-by the workflow.
 
 ## Commit checks
 
