@@ -1,5 +1,11 @@
 # rolldown-plugin-react-forward-ref
 
+## 0.2.1
+
+### Patch Changes
+
+- 67c49bc: Add a transform hook filter so Rolldown and Vite skip handler calls for unsupported files, declarations, dependencies, virtual modules, and raw or URL requests.
+
 ## 0.2.0
 
 ### Minor Changes
