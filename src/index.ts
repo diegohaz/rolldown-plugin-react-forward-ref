@@ -30,6 +30,7 @@ export interface ReactForwardRefPlugin {
   enforce: "pre";
   transform: {
     order: "pre";
+    filter: { id: { include: RegExp; exclude: RegExp[] } };
     handler(code: string, id: string): { code: string; map: SourceMap } | null;
   };
 }
@@ -69,6 +70,19 @@ export default function reactForwardRef(
     enforce: "pre",
     transform: {
       order: "pre",
+      // Hook filters receive full IDs. Match user patterns in the handler
+      // after normalizing paths and removing query suffixes.
+      filter: {
+        id: {
+          include: /^[^?]*\.(?:[cm]?[jt]s|[jt]sx)(?:\?|$)/,
+          exclude: [
+            /\0/,
+            /^[^?]*\.d\.[cm]?ts(?:\?|$)/,
+            /^(?:[^?]*[/\\])?node_modules[/\\]/,
+            /^[^?]*\?(?:[^?]*&)?(?:raw|url)(?:[=&?]|$)/,
+          ],
+        },
+      },
       handler(code, id) {
         if (id.includes("\0")) return null;
         const [path = "", query] = normalizePath(id).split("?", 2);
