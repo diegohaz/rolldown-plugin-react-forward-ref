@@ -63,7 +63,7 @@
   "devDependencies": {
     "@changesets/cli": "3.0.2",
     "@jridgewell/trace-mapping": "0.3.31",
-    "@types/node": "24.13.3",
+    "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
@@ -82,7 +82,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "24.20.0",
+      "version": "24.21.0",
       "onFail": "download"
     }
   },
